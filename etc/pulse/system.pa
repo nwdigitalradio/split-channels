@@ -1,0 +1,50 @@
+#!/usr/bin/pulseaudio -nF
+#
+# This file is part of PulseAudio.
+#
+# PulseAudio is free software; you can redistribute it and/or modify it
+# under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# PulseAudio is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with PulseAudio; if not, see <http://www.gnu.org/licenses/>.
+
+# This startup script is used only if PulseAudio is started in system
+# mode.
+
+#load-module module-udev-detect
+load-module module-native-protocol-unix auth-anonymous=1
+
+#  Load up the DRAWS card with appropriate parameters
+#  XXX We may want to load this up at 96k for future-proofing
+load-module module-alsa-card device_id="udrc" name="draws" card_name="draws" namereg_fail=false tsched=yes fixed_latency_range=no ignore_dB=no deferred_volume=yes use_ucm=no rate=48000 format=s16le source_name="draws-capture" sink_name="draws-playback" mmap=yes
+
+
+
+#  For debugging only
+load-module module-cli-protocol-tcp listen=0.0.0.0
+
+#  Create the left source/sink
+load-module module-remap-sink sink_name="draws-playback-left" master="draws-playback" channels=1 channel_map="mono" master_channel_map="front-left" remix=no
+load-module module-remap-source source_name="draws-capture-left" master="draws-capture" channels=1 channel_map="mono" master_channel_map="front-left" remix=no
+
+#  Create the right source/sink
+load-module module-remap-sink sink_name="draws-playback-right" master="draws-playback" channels=1 channel_map="mono" master_channel_map="front-right" remix=no
+load-module module-remap-source source_name="draws-capture-right" master="draws-capture" channels=1 channel_map="mono" master_channel_map="front-right" remix=no
+
+#  Load up the onboard audio and use it for a monitor channel
+.nofail
+load-module module-alsa-card device_id="ALSA" name="system-audio" card_name="system-audio" namereg_fail=false tsched=yes fixed_latency_range=no ignore_dB=no deferred_volume=yes use_ucm=no rate=48000 format=s16le sink_name="system-audio-playback" mmap=no
+load-module module-loopback source="draws-capture" sink="system-audio-playback"
+.fail
+
+set-default-sink draws-playback-left
+set-default-source draws-capture-left
+### Make sure we always have a sink around, even if it is a null sink.
+load-module module-always-sink
