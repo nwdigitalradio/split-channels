@@ -3,7 +3,7 @@ install the pulseaudio package:
 `apt-get install pulseaudio`
 
 Copy the appropriate files in this repository to appropriate
-locations.
+locations. You will need to modify the callsign in /etc/direwolf.conf
 
 Set pulseaudio to start on boot:
 
